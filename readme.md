@@ -14,8 +14,8 @@ This repository automates an Airtable-backed applicant pipeline. It:
 ## Quick Start
 
 ```bash
-git clone <your-repo-url>.git
-cd <repo>
+git clone https://github.com/claudiarichardxx/HireEasy.git
+cd HireEasy
 python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
@@ -92,7 +92,7 @@ Add `.env` to `.gitignore` (already in this repo) so secrets never land in versi
 
 ## Logging
 
-All scripts use a shared logger from `loggerConfig.py`. Typical configuration:
+All scripts use a shared logger from `loggerConfig.py`. Configuration:
 
 ```python
 # loggerConfig.py
@@ -120,7 +120,7 @@ def setup_logger(name="my_logger"):
     return logger
 ```
 
-If you run scripts repeatedly in notebooks, avoid duplicate handlers by keeping the `if not logger.handlers:` guard (already present in your code).
+If you run scripts repeatedly in notebooks, avoid duplicate handlers by keeping the `if not logger.handlers:` guard.
 
 ---
 
@@ -140,7 +140,7 @@ Tables are created by `setupAirTables.py` using `utils/dbModel.py`. Field defini
 ### Personal Details (child)
 
 * **Full Name**: `singleLineText`
-* **Applicant ID**: `multipleRecordLinks` → links to Applicants
+* **Applicant ID**: `multipleRecordLinks` -> links to Applicants
 * **Email**: `email`
 * **Location**: `multilineText`
 * **LinkedIn Profile**: `url`
@@ -148,7 +148,7 @@ Tables are created by `setupAirTables.py` using `utils/dbModel.py`. Field defini
 ### Work Experience (child)
 
 * **Experience ID**: `number` (precision: 0)
-* **Applicant ID**: `multipleRecordLinks` → links to Applicants
+* **Applicant ID**: `multipleRecordLinks` -> links to Applicants
 * **Company**: `singleLineText`
 * **Title**: `singleLineText`
 * **Start**: `date` (local)
@@ -158,7 +158,7 @@ Tables are created by `setupAirTables.py` using `utils/dbModel.py`. Field defini
 ### Salary Preferences (child)
 
 * **Salary Preference ID**: `number` (precision: 0)
-* **Applicant ID**: `multipleRecordLinks` → links to Applicants
+* **Applicant ID**: `multipleRecordLinks` -> links to Applicants
 * **Preferred Rate**: `currency` (\$, precision: 2)
 * **Minimum Rate**: `currency` (\$, precision: 2)
 * **Currency**: `singleLineText`
@@ -167,7 +167,7 @@ Tables are created by `setupAirTables.py` using `utils/dbModel.py`. Field defini
 ### Shortlisted Leads
 
 * **Lead ID**: `number` (precision: 0)
-* **Applicant ID**: `multipleRecordLinks` → links to Applicants
+* **Applicant ID**: `multipleRecordLinks` -> links to Applicants
 * **Compressed JSON**: `richText`
 * **Score Reason**: `multilineText`
 * **Created At**: `dateTime` (America/Toronto, 12-hour)
@@ -201,19 +201,6 @@ def update_record(record_id: str, table_name: str, field: str, value) -> dict:
 
 def add_record(table_name: str, value: dict) -> dict | None:
     # POST a new record; returns created record or None on error
-```
-
-**Small tweak recommended:** where you log multiple values, prefer format strings or `%s` placeholders:
-
-```python
-# Instead of logger.info("Decompression failed:", e)
-logger.info("Decompression failed: %s", e)
-```
-
-Same in `compress.py` where you currently do `logger.info(i['id'], i['fields'].get('Applicant ID', 'No ID'))`. Use one formatted string:
-
-```python
-logger.info("Record %s Applicant ID: %s", i['id'], i['fields'].get('Applicant ID', 'No ID'))
 ```
 
 ---
@@ -391,17 +378,15 @@ python shortlist.py
 ## LLM Integration: Configuration and Security
 
 * **SDK**: OpenAI Python SDK.
-* **Model**: Defaults to `gpt-4o-mini` (adjust per your budget/quality needs).
-* **Auth**: `openai_api_key` is read from `.env`. Never hardcode secrets.
+* **Model**: Defaults to `gpt-4o-mini` (adjust per budget/quality needs).
+* **Auth**: `openai_api_key` is read from `.env`.
 * **Backoff**: Exponential backoff with up to 3 attempts by default.
-* **Budget Guardrails**: `max_tokens=500` in the call; adjust as needed. Consider enforcing a max input size by truncating extremely large compressed JSON.
+* **Budget Guardrails**: `max_tokens=500` in the call; adjust as needed.
 * **Response Validation**: Model is instructed to return JSON only. We `json.loads` the response and log raw text on failure.
 
-Additional hardening ideas:
+Additional hardening idea:
 
-* Validate JSON shape with `pydantic` or `jsonschema`.
 * Add a deterministic fallback scorer if the LLM response is invalid after N retries.
-* Redact PII in logs if compliance matters.
 
 ---
 
@@ -460,11 +445,11 @@ def tech_score(work_experiences) -> int:
     return score
 ```
 
-Then use `tech_score()` as part of your decision to create a lead.
+Then use `tech_score()` as part of our decision to create a lead.
 
 ### Make criteria data-driven
 
-For non-dev teammates, move thresholds/allowlists into a JSON or YAML file (e.g., `config/rules.yaml`) and load it at runtime. That lets you change rules without code changes.
+For non-dev teammates, move thresholds/allowlists into a JSON or YAML file (e.g., `config/rules.yaml`) and load it at runtime. That lets us change rules without code changes.
 
 ---
 
@@ -473,20 +458,20 @@ For non-dev teammates, move thresholds/allowlists into a JSON or YAML file (e.g.
 1. **Create schema**
    `python setupAirTables.py`
 
-2. **Ingest/normalize data into Applicants**
-   Use your own importer or UI to create Applicant rows and linked records.
+2. **Ingest/normalize data into tables**
+   Use your own Airtable UI to create forms to ingest data into Applicants, Personal Details, Work Experience and Salary Preferences.
 
-3. **Compress to JSON**
+3. **Compress data to JSON and insert into parent**
    `python compress.py`
 
 4. **(Optional) Decompress back to child tables**
    `python decompress.py`
 
-5. **Generate LLM fields**
-   `python summaryGeneration.py`
-
-6. **Shortlist**
+5. **Shortlist**
    `python shortlist.py`
+
+6. **Generate LLM fields**
+   `python summaryGeneration.py`
 
 ---
 
@@ -508,7 +493,6 @@ For non-dev teammates, move thresholds/allowlists into a JSON or YAML file (e.g.
 ## Security
 
 * Secrets live in `.env`. `.env` is .gitignored.
-* Avoid logging raw PII or entire LLM prompts if the data is sensitive.
 * Restrict Airtable token to the minimal scopes required.
 * If you share logs externally, scrub or redact values.
 
@@ -518,7 +502,6 @@ For non-dev teammates, move thresholds/allowlists into a JSON or YAML file (e.g.
 
 * **Duplicate logs**: If you see duplicate lines, ensure `setup_logger()` is only attaching handlers once and `logger.propagate = False`.
 * **Case-sensitive imports**: Match the exact filename casing (e.g., `dbModel.py` vs `dbmodel.py`).
-* **Logging calls with multiple args**: Use one formatted string or `%s` placeholders.
 
 
 ---
