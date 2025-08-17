@@ -7,8 +7,8 @@ This repository automates an Airtable-backed applicant pipeline. It:
 * Creates the Airtable schema (tables + fields) via API.
 * Normalizes and compresses multi-table applicant data into a single JSON blob for storage/routing.
 * Decompresses that JSON back into normalized tables when needed.
-* Calls an LLM to generate a summary/score/follow-ups per applicant.
 * Applies rules to shortlist strong candidates into a "Shortlisted Leads" table.
+* Calls an LLM to generate a summary/score/follow-ups per applicant.
 * Logs everything to a file and console for auditing.
 
 ---
