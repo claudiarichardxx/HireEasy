@@ -33,11 +33,11 @@ python compress.py
 # 3) (Optional) Decompress compressed JSON into child tables
 python decompress.py
 
-# 4) Generate LLM fields (summary/score/follow-ups)
-python summaryGeneration.py
-
-# 5) Apply shortlisting logic
+# 4) Apply shortlisting logic
 python shortlist.py
+
+# 5) Generate LLM fields (summary/score/follow-ups)
+python summaryGeneration.py
 ```
 
 ---
@@ -294,7 +294,51 @@ python decompress.py
 
 ---
 
-### 5) `summaryGeneration.py`: LLM Summaries/Scores/Follow-Ups
+
+### 5) `shortlist.py`: Rules-Based Shortlisting
+
+**What it does:** Reads Applicants → parses compressed JSON → computes total years of experience → checks company pedigree, rate, availability, and location → writes qualified candidates into "Shortlisted Leads" with a human-readable `Score Reason`.
+
+**Core logic:**
+
+```python
+def calculate_experience(work_experiences) -> float:
+    # Sum day deltas across entries, return years rounded to 2 decimals
+
+tier_one_companies = ["Meta", "Apple", "Amazon", "Microsoft", "Google", ... ]
+
+def shortlist_applicants():
+    # years >= 4 OR any(company in tier_one_companies)
+    # AND Preferred Rate <= 100
+    # AND Availability >= 20
+    # AND Location in allowed set
+    # => add record to Shortlisted Leads with Applicant ID link + Compressed JSON + Score Reason
+```
+
+**Command:**
+
+```bash
+python shortlist.py
+```
+
+---
+
+## LLM Integration: Configuration and Security
+
+* **SDK**: OpenAI Python SDK.
+* **Model**: Defaults to `gpt-4o-mini` (adjust per budget/quality needs).
+* **Auth**: `openai_api_key` is read from `.env`.
+* **Backoff**: Exponential backoff with up to 3 attempts by default.
+* **Budget Guardrails**: `max_tokens=500` in the call; adjust as needed.
+* **Response Validation**: Model is instructed to return JSON only. We `json.loads` the response and log raw text on failure.
+
+Additional hardening idea:
+
+* Add a deterministic fallback scorer if the LLM response is invalid after N retries.
+
+---
+
+### 6) `summaryGeneration.py`: LLM Summaries/Scores/Follow-Ups
 
 **What it does:** Calls an LLM with the Applicant’s “Compressed JSON” and expects a JSON response containing three fields:
 
@@ -346,49 +390,6 @@ def get_llm_output(input_text: str, max_retries: int) -> dict:
 ```bash
 python summaryGeneration.py
 ```
-
----
-
-### 6) `shortlist.py`: Rules-Based Shortlisting
-
-**What it does:** Reads Applicants → parses compressed JSON → computes total years of experience → checks company pedigree, rate, availability, and location → writes qualified candidates into "Shortlisted Leads" with a human-readable `Score Reason`.
-
-**Core logic:**
-
-```python
-def calculate_experience(work_experiences) -> float:
-    # Sum day deltas across entries, return years rounded to 2 decimals
-
-tier_one_companies = ["Meta", "Apple", "Amazon", "Microsoft", "Google", ... ]
-
-def shortlist_applicants():
-    # years >= 4 OR any(company in tier_one_companies)
-    # AND Preferred Rate <= 100
-    # AND Availability >= 20
-    # AND Location in allowed set
-    # => add record to Shortlisted Leads with Applicant ID link + Compressed JSON + Score Reason
-```
-
-**Command:**
-
-```bash
-python shortlist.py
-```
-
----
-
-## LLM Integration: Configuration and Security
-
-* **SDK**: OpenAI Python SDK.
-* **Model**: Defaults to `gpt-4o-mini` (adjust per budget/quality needs).
-* **Auth**: `openai_api_key` is read from `.env`.
-* **Backoff**: Exponential backoff with up to 3 attempts by default.
-* **Budget Guardrails**: `max_tokens=500` in the call; adjust as needed.
-* **Response Validation**: Model is instructed to return JSON only. We `json.loads` the response and log raw text on failure.
-
-Additional hardening idea:
-
-* Add a deterministic fallback scorer if the LLM response is invalid after N retries.
 
 ---
 
