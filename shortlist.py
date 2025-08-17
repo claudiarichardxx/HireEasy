@@ -6,37 +6,10 @@ logger = setup_logger()
 import os
 from dotenv import load_dotenv
 load_dotenv()
+import yaml
 
-tier_one_companies = [
-                    "Meta",
-                    "Apple",
-                    "Amazon",
-                    "Microsoft",
-                    "Google",
-                    "Netflix",
-                    "Tesla",
-                    "NVIDIA",
-                    "Adobe",
-                    "Salesforce",
-                    "Oracle",
-                    "Intel",
-                    "Cisco",
-                    "McKinsey & Company",
-                    "Boston Consulting Group",
-                    "Bain & Company",
-                    "Goldman Sachs",
-                    "Morgan Stanley",
-                    "JP Morgan Chase",
-                    "Jane Street",
-                    "Two Sigma",
-                    "Citadel",
-                    "Stripe",
-                    "OpenAI",
-                    "DeepMind",
-                    "SpaceX",
-                    "Databricks",
-                    "Snowflake"
-                ]
+with open("config.yaml", "r") as f:
+    config = yaml.safe_load(f)
 
 
 def calculate_experience(work_experiences):
@@ -94,9 +67,9 @@ def shortlist_applicants():
             years = calculate_experience(work_experience)
             
             companies_worked = [we.get("Company") for we in work_experience]
-            if (years >= 4 or any(company in tier_one_companies for company in companies_worked)):
-                if (data.get(os.getenv('salary_preferences_table_name'))['Preferred Rate']<=100 and data.get(os.getenv('salary_preferences_table_name'))['Availability'] >= 20):
-                    if(data.get(os.getenv('personal_details_table_name'))['Location'] in ['US', 'United States', 'Canada', 'UK', 'Germany', 'India']):
+            if (years >= config['min_experience_years'] or any(company in config["tier_one_companies"] for company in companies_worked)):
+                if (data.get(os.getenv('salary_preferences_table_name'))['Preferred Rate']<= config['max_preferred_rate'] and data.get(os.getenv('salary_preferences_table_name'))['Availability'] >= config['min_hours_available']):
+                    if(data.get(os.getenv('personal_details_table_name'))['Location'] in config['location']):
                             logger.info(f"Shortlisting Applicant: {app['fields'].get('Applicant ID')}")
 
                             shortlisted_lead = {

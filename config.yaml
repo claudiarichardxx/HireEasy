@@ -1,0 +1,41 @@
+min_experience_years: 4
+max_preferred_rate: 100
+min_hours_available: 20
+
+location:
+  - US
+  - United States
+  - Canada
+  - UK
+  - Germany
+  - India
+
+tier_one_companies:
+  - Meta
+  - Apple
+  - Amazon
+  - Microsoft
+  - Google
+  - Netflix
+  - Tesla
+  - NVIDIA
+  - Adobe
+  - Salesforce
+  - Oracle
+  - Intel
+  - Cisco
+  - McKinsey & Company
+  - Boston Consulting Group
+  - Bain & Company
+  - Goldman Sachs
+  - Morgan Stanley
+  - JP Morgan Chase
+  - Jane Street
+  - Two Sigma
+  - Citadel
+  - Stripe
+  - OpenAI
+  - DeepMind
+  - SpaceX
+  - Databricks
+  - Snowflake
