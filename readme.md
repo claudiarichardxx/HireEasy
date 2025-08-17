@@ -1,5 +1,6 @@
 # Candidate Shortlisting Automation
 
+Link to the GitHub repository: https://github.com/claudiarichardxx/HireEasy.git
 This repository automates an Airtable-backed applicant pipeline. It:
 
 * Creates the Airtable schema (tables + fields) via API.
