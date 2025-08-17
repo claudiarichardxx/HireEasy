@@ -50,6 +50,7 @@ python summaryGeneration.py
 │  ├─ airTableHelpers.py      # Airtable REST helpers (create table, CRUD records, etc.)
 │  └─ dbModel.py              # Table definitions + schema creation routines
 ├─ compress.py                # Builds “Compressed JSON” in Applicants
+├─ config.yaml                # Contains shortlisting criteria
 ├─ decompress.py              # Expands “Compressed JSON” back into normalized child tables
 ├─ loggerConfig.py            # Central logging config (file + console)
 ├─ requirements.txt
@@ -134,7 +135,7 @@ Tables are created by `setupAirTables.py` using `utils/dbModel.py`. Field defini
 
 * **Applicant ID**: `email`
 * **Compressed JSON**: `multilineText`
-* **Shortlist Status**: `checkbox` (green, check icon) → automatically ticked when an entry is created in the 'Shortlisted Leads' table 
+* **Shortlist Status**: `checkbox` (green, check icon) -> automatically ticked when an entry is created in the 'Shortlisted Leads' table 
 * **LLM Summary**: `multilineText`
 * **LLM Score**: `number` (precision: 2)
 * **LLM Follow-Ups**: `multilineText`
@@ -297,7 +298,7 @@ python decompress.py
 
 ### 5) `shortlist.py`: Rules-Based Shortlisting
 
-**What it does:** Reads Applicants → parses compressed JSON → computes total years of experience → checks company pedigree, rate, availability, and location → writes qualified candidates into "Shortlisted Leads" with a human-readable `Score Reason`.
+**What it does:** Reads Applicants -> parses compressed JSON -> computes total years of experience -> loads criteria from config.yaml -> checks company pedigree, rate, availability, and location -> writes qualified candidates into "Shortlisted Leads" with a human-readable `Score Reason`.
 
 **Core logic:**
 
@@ -305,12 +306,13 @@ python decompress.py
 def calculate_experience(work_experiences) -> float:
     # Sum day deltas across entries, return years rounded to 2 decimals
 
-tier_one_companies = ["Meta", "Apple", "Amazon", "Microsoft", "Google", ... ]
+
 
 def shortlist_applicants():
+    # tier_one_companies = config['tier_one_companies']
     # years >= 4 OR any(company in tier_one_companies)
-    # AND Preferred Rate <= 100
-    # AND Availability >= 20
+    # AND Preferred Rate <= config['max_preferred_rate']
+    # AND Availability >= config['min_hours_available']
     # AND Location in allowed set
     # => add record to Shortlisted Leads with Applicant ID link + Compressed JSON + Score Reason
 ```
@@ -340,7 +342,7 @@ Additional hardening idea:
 
 ### 6) `summaryGeneration.py`: LLM Summaries/Scores/Follow-Ups
 
-**What it does:** Calls an LLM with the Applicant’s “Compressed JSON” and expects a JSON response containing three fields:
+**What it does:** Calls an LLM with the Applicant's "Compressed JSON" and expects a JSON response containing three fields:
 
 * `LLM Summary` (one line)
 * `LLM Score` (1–10)
@@ -401,38 +403,55 @@ All shortlisting rules live in `shortlist.py`.
 
 Examples:
 
-1. **Adjust experience threshold**
+1. **Adjust criteria in config.yaml**
+```
+min_experience_years: 4
+max_preferred_rate: 100
+min_hours_available: 20
 
-```python
-MIN_YEARS = 4.0  # change here
-if years >= MIN_YEARS:
-    ...
+location:
+  - US
+  - United States
+  - Canada
+  - UK
+  - Germany
+  - India
+
+tier_one_companies:
+  - Meta
+  - Apple
+  - Amazon
+  - Microsoft
+  - Google
+  - Netflix
+  - Tesla
+  - NVIDIA
+  - Adobe
+  - Salesforce
+  - Oracle
+  - Intel
+  - Cisco
+  - McKinsey & Company
+  - Boston Consulting Group
+  - Bain & Company
+  - Goldman Sachs
+  - Morgan Stanley
+  - JP Morgan Chase
+  - Jane Street
+  - Two Sigma
+  - Citadel
+  - Stripe
+  - OpenAI
+  - DeepMind
+  - SpaceX
+  - Databricks
+  - Snowflake
+
 ```
 
-2. **Tier-one companies**
 
-```python
-tier_one_companies.extend(["Anthropic", "Palantir"])
-```
 
-3. **Rate and availability**
-
-```python
-MAX_RATE = 100
-MIN_AVAIL = 20
-if prefs["Preferred Rate"] <= MAX_RATE and prefs["Availability"] >= MIN_AVAIL:
-    ...
-```
-
-4. **Location allowlist**
-
-```python
-ALLOWED_LOCATIONS = {"US", "United States", "Canada", "UK", "Germany", "India"}
-if details["Location"] in ALLOWED_LOCATIONS:
-    ...
-```
-
-5. **Add language/skill keywords**
+2. **Possible extension: Add language/skill keywords**
    Parse `Technologies` from Work Experience and add weights:
 
 ```python
@@ -450,9 +469,9 @@ def tech_score(work_experiences) -> int:
 
 Then use `tech_score()` as part of our decision to create a lead.
 
-### Make criteria data-driven
+### Criteria is data-driven
 
-For non-dev teammates, move thresholds/allowlists into a JSON or YAML file (e.g., `config/rules.yaml`) and load it at runtime. That lets us change rules without code changes.
+For non-dev teammates, thresholds/allowlists are available in config.yaml to be loaded at runtime. This lets us change rules without code changes.
 
 ---
 
